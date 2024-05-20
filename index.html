@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dart Scoreboard</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="scoreboard player1">
+            <label for="player1-name">Player 1:</label>
+            <input type="text" id="player1-name" placeholder="Enter player name">
+            <table id="scoreboard-player1">
+                <thead>
+                    <tr>
+                        <th>Number</th>
+                        <th>Marks</th>
+                    </tr>
+                </thead>
+                <tbody id="scoreboard-body-player1">
+                    <!-- JavaScript will generate rows here -->
+                </tbody>
+            </table>
+        </div>
+        <div class="scoreboard player2">
+            <label for="player2-name">Player 2:</label>
+            <input type="text" id="player2-name" placeholder="Enter player name">
+            <table id="scoreboard-player2">
+                <thead>
+                    <tr>
+                        <th>Number</th>
+                        <th>Marks</th>
+                    </tr>
+                </thead>
+                <tbody id="scoreboard-body-player2">
+                    <!-- JavaScript will generate rows here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="controls">
+        <button onclick="undo()">GERİ AL</button>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>

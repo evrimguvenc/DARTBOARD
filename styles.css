@@ -6,8 +6,8 @@ body {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    height: 50vh;
-    overflow: hidden;
+    height: 100vh;
+    overflow: auto;
 }
 
 .container {

@@ -71,3 +71,15 @@ function undo() {
         }
     }
 }
+
+function reset() {
+    numbers.forEach(num => {
+        scores.player1[num] = 0;
+        scores.player2[num] = 0;
+    });
+    history.length = 0; // Clear history
+    numbers.forEach(num => {
+        updateScore(num, 'player1');
+        updateScore(num, 'player2');
+    });
+}

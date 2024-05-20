@@ -20,16 +20,22 @@ body {
 }
 
 .scoreboard {
-    background-color: #fff;
+    background-color: #f2e90d;
     padding: 20px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     border-radius: 10px;
     flex: 1;
     box-sizing: border-box;
+    color: #26221e;
+}
+
+.scoreboard label {
+    color: #26221e;
 }
 
 h1 {
     text-align: center;
+    color: #26221e;
 }
 
 table {
@@ -39,9 +45,10 @@ table {
 }
 
 th, td {
-    border: 1px solid #ddd;
+    border: 1px solid #26221e;
     padding: 10px;
     text-align: center;
+    color: #26221e;
 }
 
 .controls {
@@ -54,10 +61,22 @@ input {
     margin-bottom: 10px;
     width: calc(100% - 10px);
     box-sizing: border-box;
+    border: 1px solid #26221e;
+    background-color: #dee3c4;
+    color: #26221e;
 }
 
 button {
     padding: 5px 10px;
+    background-color: #f24829;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #d73b24;
 }
 
 @media (max-width: 768px) {

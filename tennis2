@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<title>2D Drag-Shot Tennis</title>
+<style>
+  html,body{margin:0;padding:0;background:#e7f5ee;font-family:sans-serif;display:flex;flex-direction:column;align-items:center}
+  h2{margin:12px 0 4px}
+  #scoreboard{display:flex;gap:40px;margin-bottom:8px;text-align:center;font-size:1rem}
+  #scoreboard div{min-width:80px}
+  /* ---- Responsive kort oranı ---- */
+  #courtContainer{position:relative}
+  /* Izgara + yeşil zemin */
+  #court{display:grid;background:#46a15d;border:4px solid #0b5c2a;width:100%;height:100%;
+         grid-template-columns:repeat(12,1fr);grid-template-rows:repeat(24,1fr)}
+  .cell{border:1px solid #0c8934;box-sizing:border-box}
+  /* Kort çizgileri */
+  .line{position:absolute;background:#fff}
+  .hLine{height:2px;width:100%}
+  .vLine{width:2px;height:100%}
+  /* Top & ok gösterge */
+  .ball{position:absolute;width:4vmin;height:4vmin;min-width:24px;min-height:24px;font-size:3vmin;
+        line-height:4vmin;text-align:center;user-select:none;pointer-events:none}
+  #aimLine{position:absolute;width:2px;background:#ff0;transform-origin:0 50%;display:none}
+</style>
+</head>
+<body>
+<h2>2D Drag-Shot Tennis</h2>
+<div id="scoreboard">
+  <div><strong>P1</strong><br>Oyun: <span id="p1Game">0</span><br>Puan: <span id="p1Point">0</span><br>Rally: <span id="p1Rally">0</span></div>
+  <div><strong>P2</strong><br>Oyun: <span id="p2Game">0</span><br>Puan: <span id="p2Point">0</span><br>Rally: <span id="p2Rally">0</span></div>
+</div>
+
+<div id="courtContainer">
+  <div id="court"></div>
+  <div id="aimLine"></div>
+  <div id="ball" class="ball">🎾</div>
+</div>
+
+<script>
+// ----------  IZGARA ve KORT ÇİZGİLERİ ----------
+const rallyMap=[[3,2,2,2,2,2,2,2,2,2,2,3],[3,2,2,2,2,2,2,2,2,2,2,3],
+[2,2,1,1,1,0,0,1,1,1,2,2],[2,1,1,1,0,0,0,0,1,1,1,2],[1,1,1,0,0,0,0,0,0,1,1,1],
+[1,1,0,0,0,0,0,0,0,0,1,1],[1,1,0,0,0,0,0,0,0,0,1,1],
+[1,1,1,0,0,0,0,0,0,1,1,1],[2,1,1,1,0,0,0,0,1,1,1,2],
+[2,2,1,1,1,0,0,1,1,1,2,2],[3,2,2,2,2,2,2,2,2,2,2,3],
+[3,2,2,2,2,2,2,2,2,2,2,3],[2,2,1,1,1,0,0,1,1,1,2,2],
+[2,1,1,1,0,0,0,0,1,1,1,2],[1,1,1,0,0,0,0,0,0,1,1,1],
+[1,1,0,0,0,0,0,0,0,0,1,1],[1,1,0,0,0,0,0,0,0,0,1,1],
+[1,1,1,0,0,0,0,0,0,1,1,1],[2,1,1,1,0,0,0,0,1,1,1,2],
+[2,2,1,1,1,0,0,1,1,1,2,2],[3,2,2,2,2,2,2,2,2,2,2,3],
+[3,2,2,2,2,2,2,2,2,2,2,3],[3,2,2,2,2,2,2,2,2,2,2,3]];
+const ROWS=rallyMap.length, COLS=rallyMap[0].length;
+const court=document.getElementById('court'), container=document.getElementById('courtContainer');
+for(let r=0;r<ROWS;r++){for(let c=0;c<COLS;c++){const d=document.createElement('div');d.className='cell';court.appendChild(d);}}
+
+// Kort çizgileri (oransal)
+function addLine(cls,styles){const l=document.createElement('div');l.className='line '+cls;Object.assign(l.style,styles);container.appendChild(l);}
+function drawCourtLines(){
+  const w=container.clientWidth, h=container.clientHeight;
+  const rowH=h/ROWS, colW=w/COLS;
+  addLine('hLine',{top:`${rowH*0}px`});            // üst baseline
+  addLine('hLine',{top:`${rowH*23}px`});           // alt baseline
+  addLine('hLine',{top:`${rowH*6}px`});            // servis çizgisi P1
+  addLine('hLine',{top:`${rowH*17}px`});           // servis çizgisi P2
+  addLine('hLine',{top:`${rowH*11.5}px`});         // net çizgisi (ince)
+  addLine('vLine',{left:`${colW*0}px`});           // sol single side
+  addLine('vLine',{left:`${colW*11}px`});          // sağ single side
+  addLine('vLine',{left:`${colW*6}px`,height:`${rowH*12}px`,top:`${rowH*6}px`}); // orta servis çiz.
+}
+drawCourtLines();
+
+// ---------- RESPONSIVE ORAN ----------
+function resizeCourt(){
+  const maxW=window.innerWidth*0.9;
+  const maxH=window.innerHeight*0.9;
+  const w=Math.min(maxW,maxH/2); // en ×2 = boy
+  container.style.width=w+'px';
+  container.style.height=(w*2)+'px';
+  // çizgileri yenile
+  document.querySelectorAll('.line').forEach(l=>l.remove());
+  drawCourtLines();
+  placeBall();
+}
+window.addEventListener('resize',resizeCourt);resizeCourt();
+
+// ---------- SKOR & RALLY ----------
+let server=1,currentPlayer=1;
+let p1Point=0,p2Point=0,p1Game=0,p2Game=0,p1Rally=0,p2Rally=0;
+const p1G=document.getElementById('p1Game'),p2G=document.getElementById('p2Game'),
+      p1P=document.getElementById('p1Point'),p2P=document.getElementById('p2Point'),
+      p1R=document.getElementById('p1Rally'),p2R=document.getElementById('p2Rally');
+function upd(){p1G.textContent=p1Game;p2G.textContent=p2Game;
+  p1P.textContent=p1Point;p2P.textContent=p2Point;
+  p1R.textContent=p1Rally;p2R.textContent=p2Rally;} upd();
+function opp(p){return p===1?2:1;}
+function nxt(p){return p===0?15:p===15?30:p===30?40:'game';}
+function gamePoint(w){
+  if(w===1){const n=nxt(p1Point);if(n==='game'){p1Game++;p1Point=p2Point=0;server=2;}else p1Point=n;}
+  else{const n=nxt(p2Point);if(n==='game'){p2Game++;p1Point=p2Point=0;server=1;}else p2Point=n;}
+  upd();
+}
+
+// ---------- TOP & ATIŞ MEKANİĞİ ----------
+const ball=document.getElementById('ball'), aim=document.getElementById('aimLine');
+let velX=0,velY=0,anim=null;
+
+function placeBall(){
+  const rect=court.getBoundingClientRect();
+  const x=server===1?rect.left+rect.width*0.25:rect.left+rect.width*0.75;
+  const y=server===1?rect.top+rect.height*0.9:rect.top+rect.height*0.1;
+  ball.style.left=(x-ball.offsetWidth/2)+'px';
+  ball.style.top=(y-ball.offsetHeight/2)+'px';
+}
+placeBall();
+
+let dragging=false,startX=0,startY=0;
+ball.addEventListener('mousedown',e=>{
+  dragging=true;startX=e.clientX;startY=e.clientY;aim.style.display='block';
+  document.addEventListener('mousemove',dragAim);
+  document.addEventListener('mouseup',releaseAim);
+});
+function dragAim(e){
+  if(!dragging)return;
+  const dx=e.clientX-startX, dy=e.clientY-startY;
+  const maxLen=150;
+  const len=Math.min(Math.hypot(dx,dy),maxLen);
+  const angle=Math.atan2(dy,dx);
+  aim.style.width=len+'px';
+  aim.style.transform=`translate(${ball.offsetLeft+ball.offsetWidth/2}px,${ball.offsetTop+ball.offsetHeight/2}px) rotate(${angle}rad)`;
+}
+function releaseAim(e){
+  dragging=false;aim.style.display='none';
+  document.removeEventListener('mousemove',dragAim);
+  document.removeEventListener('mouseup',releaseAim);
+  const dx=e.clientX-startX, dy=e.clientY-startY;
+  const maxLen=150;
+  const len=Math.min(Math.hypot(dx,dy),maxLen);
+  if(len<5)return; // çok kısa çekiş yok say
+  const speed=len*0.05; // ölçek
+  const ang=Math.atan2(dy,dx);
+  velX=Math.cos(ang)*speed;
+  velY=Math.sin(ang)*speed;
+  currentPlayer=1; // topu atan
+  animate();
+}
+function animate(){
+  cancelAnimationFrame(anim);
+  const step=()=>{
+    const friction=0.98;
+    const x=ball.offsetLeft+velX,y=ball.offsetTop+velY;
+    ball.style.left=x+'px';ball.style.top=y+'px';
+    velX*=friction;velY*=friction;
+    if(Math.hypot(velX,velY)<0.1){ // durdu
+      resolveDrop();
+      return;
+    }
+    anim=requestAnimationFrame(step);
+  };
+  anim=requestAnimationFrame(step);
+}
+
+function resolveDrop(){
+  const rect=court.getBoundingClientRect();
+  const bx=ball.offsetLeft+ball.offsetWidth/2, by=ball.offsetTop+ball.offsetHeight/2;
+  if(bx<rect.left||bx>rect.right||by<rect.top||by>rect.bottom){
+    rallyEnd(opp(currentPlayer));return;
+  }
+  const col=Math.floor((bx-rect.left)/(rect.width/COLS));
+  const row=Math.floor((by-rect.top)/(rect.height/ROWS));
+  const rally=rallyMap[row][col]||0;
+  if(rally===0){rallyEnd(opp(currentPlayer));return;}
+  if(currentPlayer===1)p1Rally+=rally;else p2Rally+=rally;upd();
+  if(Math.abs(p1Rally-p2Rally)>=3){
+    const w=p1Rally>p2Rally?1:2;gamePoint(w);p1Rally=p2Rally=0;upd();
+  }
+  currentPlayer=opp(currentPlayer);
+  placeBall();
+}
+function rallyEnd(winner){
+  if(winner===1)p1Rally+=1;else p2Rally+=1; // küçük avantaj
+  p1Rally=p2Rally=0;gamePoint(winner);upd();placeBall();
+}
+</script>
+</body>
+</html>
